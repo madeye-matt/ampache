@@ -106,6 +106,9 @@ auth_methods = "mysql"
 ; we want to redirect to an SSO provider instead.
 ; logout_redirect = "http://sso.example.com/logout"
 
+; URL of "top 50" REST service - disabled when absent
+top50_rest_server=http://localhost:8080
+
 ;#####################
 ;  Program Settings  #
 ;#####################
