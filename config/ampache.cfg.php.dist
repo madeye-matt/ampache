@@ -107,7 +107,7 @@ auth_methods = "mysql"
 ; logout_redirect = "http://sso.example.com/logout"
 
 ; URL of "top 50" REST service - disabled when absent
-top50_rest_server=http://localhost:8080
+top50_rest_server=
 
 ;#####################
 ;  Program Settings  #

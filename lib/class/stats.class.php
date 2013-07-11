@@ -28,6 +28,9 @@
  * but that's not good, all done through here.
  *
  */
+
+require_once Config::get('prefix') . '/modules/httpful/httpful.phar';
+
 class Stats {
 
     /* Base vars */
@@ -140,6 +143,32 @@ class Stats {
 
     } // get_object_history
 
+    private static function build_top_url($type, $count, $threshold){
+        $top_url = '';
+
+        $base_url = Config::get('top50_rest_server');
+
+        if (!empty($base_url)){
+            //error_log('Top50 REST server: '.$base_url, 0);
+
+            switch($type){
+            case 'song':
+                $ctx = '/top-songs';
+                break;
+            case 'artist':
+                $ctx = '/top-artists';
+                break;
+            case 'album':
+                $ctx = '/top-albums';
+                break;
+            }
+
+            $top_url = $base_url.$ctx."?num=".$count;
+        }
+
+        return $top_url;
+    }
+
     /**
       * get_top
      * This returns the top X for type Y from the
@@ -160,17 +189,35 @@ class Stats {
         $type    = self::validate_type($type);
         $date    = time() - (86400*$threshold);
 
-        /* Select Top objects counting by # of rows */
-        $sql = "SELECT object_id,COUNT(id) AS `count` FROM object_count" .
-            " WHERE object_type='$type' AND date >= '$date'" .
-            " GROUP BY object_id ORDER BY `count` DESC LIMIT $count";
-        $db_results = Dba::read($sql);
+        //error_log("Type: ".$type.", Count: ".$count.", Date: ".$date);
+
+        $top50_url = Stats::build_top_url($type, $count, $threshold);
+
+        //error_log("Top50Url: " + $top50_url);
 
         $results = array();
 
-        while ($row = Dba::fetch_assoc($db_results)) {
-            $results[] = $row['object_id'];
+        if (empty($top50_url)){
+            /* Select Top objects counting by # of rows */
+            $sql = "SELECT object_id,COUNT(id) AS `count` FROM object_count" .
+                " WHERE object_type='$type' AND date >= '$date'" .
+                " GROUP BY object_id ORDER BY `count` DESC LIMIT $count";
+            $db_results = Dba::read($sql);
+
+            while ($row = Dba::fetch_assoc($db_results)) {
+                $results[] = $row['object_id'];
+            }
+        } else {
+            $response = \Httpful\Request::get($top50_url)->send();
+            //error_log('Response: '.$response);
+            foreach($response->body->result as $result){
+                //error_log($result->name." (".$result->id.") -> ".$result->count);
+                $results[] = $result->id;
+            }
+
         }
+
+        //error_log("Results: ".$results);
 
         return $results;
 
