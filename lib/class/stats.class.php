@@ -143,7 +143,7 @@ class Stats {
 
     } // get_object_history
 
-    private static function build_top_url($type, $count, $threshold){
+    private static function build_top_url($type, $count, $start_date, $end_date){
         $top_url = '';
 
         $base_url = Config::get('top50_rest_server');
@@ -163,7 +163,17 @@ class Stats {
                 break;
             }
 
-            $top_url = $base_url.$ctx."?num=".$count;
+            $format_str = "Y-n-j";
+
+            $start_date_str = date($format_str, $start_date); 
+            $end_date_str = date($format_str, $end_date); 
+
+            //error_log("Start date: ".$start_date_str);
+            //error_log("End date: ".$end_date_str);
+
+            $top_url = $base_url.$ctx."?num=".$count."&start=".$start_date_str."&end=".$end_date_str;
+
+            //error_log("Top URL: ".$top_url);
         }
 
         return $top_url;
@@ -187,11 +197,12 @@ class Stats {
 
         $count    = intval($count);
         $type    = self::validate_type($type);
-        $date    = time() - (86400*$threshold);
+        $start_date    = time() - (86400*$threshold);
+        $end_date    = time();
 
-        //error_log("Type: ".$type.", Count: ".$count.", Date: ".$date);
+        //error_log("Type: ".$type.", Count: ".$count.", Start date: ".$start_date.", End date: ".$end_date);
 
-        $top50_url = Stats::build_top_url($type, $count, $threshold);
+        $top50_url = Stats::build_top_url($type, $count, $start_date, $end_date);
 
         //error_log("Top50Url: " + $top50_url);
 
