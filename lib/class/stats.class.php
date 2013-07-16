@@ -30,6 +30,8 @@
  */
 
 require_once Config::get('prefix') . '/modules/httpful/httpful.phar';
+require_once Config::get('prefix') . '/lib/class/top.php';
+require_once Config::get('prefix') . '/lib/class/top_result.php';
 
 class Stats {
 
@@ -143,42 +145,6 @@ class Stats {
 
     } // get_object_history
 
-    private static function build_top_url($type, $count, $start_date, $end_date){
-        $top_url = '';
-
-        $base_url = Config::get('top50_rest_server');
-
-        if (!empty($base_url)){
-            //error_log('Top50 REST server: '.$base_url, 0);
-
-            switch($type){
-            case 'song':
-                $ctx = '/top-songs';
-                break;
-            case 'artist':
-                $ctx = '/top-artists';
-                break;
-            case 'album':
-                $ctx = '/top-albums';
-                break;
-            }
-
-            $format_str = "Y-n-j";
-
-            $start_date_str = date($format_str, $start_date); 
-            $end_date_str = date($format_str, $end_date); 
-
-            //error_log("Start date: ".$start_date_str);
-            //error_log("End date: ".$end_date_str);
-
-            $top_url = $base_url.$ctx."?num=".$count."&start=".$start_date_str."&end=".$end_date_str;
-
-            //error_log("Top URL: ".$top_url);
-        }
-
-        return $top_url;
-    }
-
     /**
       * get_top
      * This returns the top X for type Y from the
@@ -200,15 +166,9 @@ class Stats {
         $start_date    = time() - (86400*$threshold);
         $end_date    = time();
 
-        //error_log("Type: ".$type.", Count: ".$count.", Start date: ".$start_date.", End date: ".$end_date);
-
-        $top50_url = Stats::build_top_url($type, $count, $start_date, $end_date);
-
-        //error_log("Top50Url: " + $top50_url);
-
         $results = array();
 
-        if (empty($top50_url)){
+        if (!Top::get_top_service_enabled()){
             /* Select Top objects counting by # of rows */
             $sql = "SELECT object_id,COUNT(id) AS `count` FROM object_count" .
                 " WHERE object_type='$type' AND date >= '$date'" .
@@ -219,16 +179,8 @@ class Stats {
                 $results[] = $row['object_id'];
             }
         } else {
-            $response = \Httpful\Request::get($top50_url)->send();
-            //error_log('Response: '.$response);
-            foreach($response->body->result as $result){
-                //error_log($result->name." (".$result->id.") -> ".$result->count);
-                $results[] = $result->id;
-            }
-
+            $results = Top::get_top($type, $count, $start_date, $end_date);
         }
-
-        //error_log("Results: ".$results);
 
         return $results;
 
